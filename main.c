@@ -22,206 +22,6 @@
 #define ALTURA_CARTA 80
 #define TOTAL_CARTAS 15
 
-int main(void)
-{
-    srand(time(NULL));
-    ALLEGRO_DISPLAY *janela = NULL;
-    ALLEGRO_EVENT_QUEUE *fila_eventos = NULL;
-    ALLEGRO_FONT *fonte = NULL;
-    ALLEGRO_BITMAP *background = NULL, *cartas[TOTAL_CARTAS], *menu = NULL, *itens_menu[TOTAL_DE_ITENS], *tras_carta = NULL, *voltar = NULL;
-    int B[IND1][IND2], A[IND1][IND2], acertos = 0, erros = 0, numJogadas = 0, memoriaProg[30], contMemoriaProg[30], errosProg = 0, acertosProg = 0, numJogadasProg = 0, chave1 = -1, chave2 = -1;
-    char pontos[5], jogadas[5];
-    int tela_atual = 0; // Indicara qual a tela o usuário está no momento, 0 = Menu, 1 = Jogo 2 = Creditos
-    // Sair = Flag que condicionará nosso looping, i = variavel de controle for, vez = Flag para informar se é a vez do jogador(0) ou do programa(1)
-    // Dificuldade: 3 = facil, 2 = medio, 1 = dificl, 0 = hardcore
-    int x, y, sair = 0, i = 0, vez = 0, dificuldade = 0;
-
-    if(!inicializar_allegro()){
-        return -1;
-    }
-    janela = inicializar_janela(janela);
-    if(!janela){
-        return -1;
-    }
-    if(!inicializar_mouse(janela)){
-        al_destroy_display(janela);
-        return -1;
-    }
-
-    fonte = carrega_fonte();
-    if(!fonte){
-        al_destroy_display(janela);
-        return -1;
-    }
-    fila_eventos = inicializar_fila_eventos(fila_eventos, janela);
-    if(!fila_eventos){
-        al_destroy_display(janela);
-        return -1;
-    }
-
-    background = al_load_bitmap("imagens\\Background.jpg");
-    menu = al_load_bitmap("imagens\\Menu.jpg");
-    tras_carta = al_load_bitmap("imagens\\FundoCartas.jpg");
-    voltar = al_load_bitmap("imagens\\Voltar.jpg");
-    carrega_cartas(cartas);
-    carrega_itens_menu(itens_menu);
-
-    zeraMat(B);
-    zeraVet(memoriaProg, 30);
-    zeraVet(contMemoriaProg, 30);
-    preencheMat(A);
-    valor(B);
-    while (!sair)
-    {
-        // Verificamos se há eventos na fila
-        while (!al_is_event_queue_empty(fila_eventos))
-        {
-            ALLEGRO_EVENT evento;
-            al_wait_for_event(fila_eventos, &evento);
-
-            if ( evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
-            {
-                sair = 1;
-            }else if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP)
-            {
-                if(tela_atual == 0){
-                    int y = ALTURA_TELA/2+20, x = LARGURA_TELA/2-50;
-                    for(i = 0; i < TOTAL_DE_ITENS; i++){
-                        if(evento.mouse.x >= x
-                           && evento.mouse.x <= x + LARGURA_ITEM_MENU
-                           && evento.mouse.y >= y
-                           && evento.mouse.y <= y + ALTURA_ITEM_MENU){
-                            tela_atual = i + 1;
-                            break;
-                        }
-                        y += ALTURA_ITEM_MENU+ESPACO_ENTRE_ITENS;
-                    }
-                }else if(tela_atual == 1){
-                    if(acertos+acertosProg < 15 && (chave1 == -1 || chave2 == -1) && vez == 0){
-                        int i,j, x = 245, y=50, cont = 0;
-                        for(i = 0; i < IND1; i++){
-                            for(j = 0; j < IND2; j++){
-                                cont++;
-                                if(evento.mouse.x >= x
-                                   && evento.mouse.x <= x + LARGURA_CARTA
-                                   && evento.mouse.y >= y
-                                   && evento.mouse.y <= y + ALTURA_CARTA){
-                                    if(chave1 == -1){
-                                        chave1 = virarCarta(A, B, cont, dificuldade, vez, memoriaProg, contMemoriaProg);
-                                    }else{
-                                        chave2 = virarCarta(A, B, cont, dificuldade, vez, memoriaProg, contMemoriaProg);
-                                    }
-                                }
-                                x += LARGURA_CARTA+5;
-                            }
-                            x = 245;
-                            y += ALTURA_CARTA+5;
-                        }
-
-                    }
-                    if(evento.mouse.x >= 50
-                       && evento.mouse.x <= 50 + LARGURA_ITEM_MENU
-                       && evento.mouse.y >= 260
-                       && evento.mouse.y <= 260 + ALTURA_ITEM_MENU){
-                            tela_atual = 0;
-                            zeraMat(B);
-                            zeraVet(memoriaProg, 30);
-                            zeraVet(contMemoriaProg, 30);
-                            preencheMat(A);
-                            valor(B);
-                            acertos = acertosProg = erros = errosProg = numJogadas = numJogadasProg = 0;
-                    }
-                } else if(tela_atual == 2){
-                    if(evento.mouse.x >= LARGURA_TELA/2 - LARGURA_ITEM_MENU/2
-                       && evento.mouse.x <= LARGURA_TELA/2 + LARGURA_ITEM_MENU/2
-                       && evento.mouse.y >= 110
-                       && evento.mouse.y <= 110 + ALTURA_ITEM_MENU){
-                            tela_atual = 0;
-                       }
-                }
-            }
-        }
-
-        if(vez == 1 && acertos+acertosProg < 15){
-                if(chave1 == -1){
-                    jogadaPrograma(A, B, &chave1, 0, acertos+acertosProg, memoriaProg, contMemoriaProg, dificuldade);
-                }else{
-                    jogadaPrograma(A, B, &chave2, chave1, acertos+acertosProg, memoriaProg, contMemoriaProg, dificuldade);
-                }
-        }
-        // Limpamos a tela
-        al_clear_to_color(al_map_rgb(255, 255, 255));
-
-        // Desenhamos os elementos na tela
-        al_set_target_bitmap(al_get_backbuffer(janela));
-
-        if(tela_atual == 0){
-            al_draw_bitmap(menu, 0, 0, 0);
-            int y = ALTURA_TELA/2+20;
-            for(i = 0; i < TOTAL_DE_ITENS; i++){
-                al_draw_bitmap(itens_menu[i], LARGURA_TELA/2-50, y, 0);
-                y += ALTURA_ITEM_MENU+ESPACO_ENTRE_ITENS;
-            }
-        }else if(tela_atual == 1){
-            al_draw_bitmap(background, 0, 0, 0);
-            desenha_cartas(tras_carta, cartas, A, B);
-            if(vez == 0){
-                al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 120, ALLEGRO_ALIGN_LEFT, "Sua vez");
-            }else if(vez == 1){
-
-                al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 120, ALLEGRO_ALIGN_LEFT, "Vez do computador");
-            }
-            sprintf(pontos, "%d", acertos-erros);
-            sprintf(jogadas, "%d", numJogadas);
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 140, ALLEGRO_ALIGN_LEFT, "Seus pontos: ");
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), 115, 140, ALLEGRO_ALIGN_LEFT, pontos);
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 160, ALLEGRO_ALIGN_LEFT, "Jogadas (voce): ");
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), 130, 160, ALLEGRO_ALIGN_LEFT, jogadas);
-
-            sprintf(pontos, "%d", acertosProg-errosProg);
-            sprintf(jogadas, "%d", numJogadasProg);
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 180, ALLEGRO_ALIGN_LEFT, "Pontos do computador: ");
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), 190, 180, ALLEGRO_ALIGN_LEFT, pontos);
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 200, ALLEGRO_ALIGN_LEFT, "Jogadas (comp): ");
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), 135, 200, ALLEGRO_ALIGN_LEFT, jogadas);
-            if(acertos+acertosProg == 15){
-                    if(acertos-erros < acertosProg-errosProg){
-                        al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 240, ALLEGRO_ALIGN_LEFT, "Que pena voce perdeu :(");
-                    } else if(acertos-erros == acertosProg-errosProg){
-                        al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 240, ALLEGRO_ALIGN_LEFT, "Ops.. acho que empatou.");
-                    } else if(acertos-erros > acertosProg-errosProg){
-                        al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 240, ALLEGRO_ALIGN_LEFT, "Parabens, voce ganhou!!");
-                    }
-            }
-            al_draw_bitmap(voltar, 55, 260, 0);
-        }else if(tela_atual == 2){
-            // Texto centralizado
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), LARGURA_TELA/2, 30, ALLEGRO_ALIGN_CENTRE, "Creditos");
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), LARGURA_TELA/2, 50, ALLEGRO_ALIGN_CENTRE, "Joao N de Deus");
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), LARGURA_TELA/2, 70, ALLEGRO_ALIGN_CENTRE, "Yuri Rosales");
-            al_draw_text(fonte, al_map_rgb(0, 0, 0), LARGURA_TELA/2, 90, ALLEGRO_ALIGN_CENTRE, "Guilherme dos Santos");
-            al_draw_bitmap(voltar, LARGURA_TELA/2-LARGURA_ITEM_MENU/2, 110, 0);
-
-        }
-
-        // Atualiza a tela
-        al_flip_display();
-
-        if(tela_atual == 1){
-            if(chave1 > -1 && chave2 > -1){
-                numeroBUSCA(A, B, &acertos, &erros, &numJogadas, &acertosProg, &errosProg, &numJogadasProg, &chave1, &chave2, &vez, memoriaProg, contMemoriaProg);
-            }else if((chave1 > -1 || chave2 > -1) && vez == 1){
-                Sleep(1000);
-            }
-        }
-    }
-
-    // Desaloca os recursos utilizados na aplicação
-    al_destroy_display(janela);
-    al_destroy_event_queue(fila_eventos);
-
-    return 0;
-}
 
 int inicializar_allegro(){
     if (!al_init())
@@ -289,9 +89,9 @@ int inicializar_fila_eventos(ALLEGRO_EVENT_QUEUE *fila_eventos, ALLEGRO_DISPLAY 
     return fila_eventos;
 }
 
-void carrega_fonte(ALLEGRO_FONT *fonte){
+ALLEGRO_FONT * carrega_fonte(){
     // Carregando o arquivo de fonte
-    fonte = al_load_font("BOD_BLAR.TTF", 14, 0);
+    ALLEGRO_FONT * fonte = al_load_font("font\\BOD_BLAR.TTF", 14, 0);
     if (!fonte)
     {
         fprintf(stderr, "Falha ao carregar fonte.\n");
@@ -564,4 +364,205 @@ void jogadaPrograma(int matA[IND1][IND2], int matB[IND1][IND2], int *chave, int 
             *chave = virarCarta(matA, matB, chaveAle, dificuldade, 1, memoriaProg, contMemoriaProg);
         }
     }while(*chave < 1);
+}
+
+int main(void)
+{
+    srand(time(NULL));
+    ALLEGRO_DISPLAY *janela = NULL;
+    ALLEGRO_EVENT_QUEUE *fila_eventos = NULL;
+    ALLEGRO_FONT *fonte = NULL;
+    ALLEGRO_BITMAP *background = NULL, *cartas[TOTAL_CARTAS], *menu = NULL, *itens_menu[TOTAL_DE_ITENS], *tras_carta = NULL, *voltar = NULL;
+    int B[IND1][IND2], A[IND1][IND2], acertos = 0, erros = 0, numJogadas = 0, memoriaProg[30], contMemoriaProg[30], errosProg = 0, acertosProg = 0, numJogadasProg = 0, chave1 = -1, chave2 = -1;
+    char pontos[5], jogadas[5];
+    int tela_atual = 0; // Indicara qual a tela o usuário está no momento, 0 = Menu, 1 = Jogo 2 = Creditos
+    // Sair = Flag que condicionará nosso looping, i = variavel de controle for, vez = Flag para informar se é a vez do jogador(0) ou do programa(1)
+    // Dificuldade: 3 = facil, 2 = medio, 1 = dificl, 0 = hardcore
+    int x, y, sair = 0, i = 0, vez = 0, dificuldade = 0;
+
+    if(!inicializar_allegro()){
+        return -1;
+    }
+    janela = inicializar_janela(janela);
+    if(!janela){
+        return -1;
+    }
+    if(!inicializar_mouse(janela)){
+        al_destroy_display(janela);
+        return -1;
+    }
+
+    fonte = carrega_fonte();
+    if(!fonte){
+        al_destroy_display(janela);
+        return -1;
+    }
+    fila_eventos = inicializar_fila_eventos(fila_eventos, janela);
+    if(!fila_eventos){
+        al_destroy_display(janela);
+        return -1;
+    }
+
+    background = al_load_bitmap("imagens\\Background.jpg");
+    menu = al_load_bitmap("imagens\\Menu.jpg");
+    tras_carta = al_load_bitmap("imagens\\FundoCartas.jpg");
+    voltar = al_load_bitmap("imagens\\Voltar.jpg");
+    carrega_cartas(cartas);
+    carrega_itens_menu(itens_menu);
+
+    zeraMat(B);
+    zeraVet(memoriaProg, 30);
+    zeraVet(contMemoriaProg, 30);
+    preencheMat(A);
+    valor(B);
+    while (!sair)
+    {
+        // Verificamos se há eventos na fila
+        while (!al_is_event_queue_empty(fila_eventos))
+        {
+            ALLEGRO_EVENT evento;
+            al_wait_for_event(fila_eventos, &evento);
+
+            if ( evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
+            {
+                sair = 1;
+            }else if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP)
+            {
+                if(tela_atual == 0){
+                    int y = ALTURA_TELA/2+20, x = LARGURA_TELA/2-50;
+                    for(i = 0; i < TOTAL_DE_ITENS; i++){
+                        if(evento.mouse.x >= x
+                           && evento.mouse.x <= x + LARGURA_ITEM_MENU
+                           && evento.mouse.y >= y
+                           && evento.mouse.y <= y + ALTURA_ITEM_MENU){
+                            tela_atual = i + 1;
+                            break;
+                        }
+                        y += ALTURA_ITEM_MENU+ESPACO_ENTRE_ITENS;
+                    }
+                }else if(tela_atual == 1){
+                    if(acertos+acertosProg < 15 && (chave1 == -1 || chave2 == -1) && vez == 0){
+                        int i,j, x = 245, y=50, cont = 0;
+                        for(i = 0; i < IND1; i++){
+                            for(j = 0; j < IND2; j++){
+                                cont++;
+                                if(evento.mouse.x >= x
+                                   && evento.mouse.x <= x + LARGURA_CARTA
+                                   && evento.mouse.y >= y
+                                   && evento.mouse.y <= y + ALTURA_CARTA){
+                                    if(chave1 == -1){
+                                        chave1 = virarCarta(A, B, cont, dificuldade, vez, memoriaProg, contMemoriaProg);
+                                    }else{
+                                        chave2 = virarCarta(A, B, cont, dificuldade, vez, memoriaProg, contMemoriaProg);
+                                    }
+                                }
+                                x += LARGURA_CARTA+5;
+                            }
+                            x = 245;
+                            y += ALTURA_CARTA+5;
+                        }
+
+                    }
+                    if(evento.mouse.x >= 50
+                       && evento.mouse.x <= 50 + LARGURA_ITEM_MENU
+                       && evento.mouse.y >= 260
+                       && evento.mouse.y <= 260 + ALTURA_ITEM_MENU){
+                        tela_atual = 0;
+                        zeraMat(B);
+                        zeraVet(memoriaProg, 30);
+                        zeraVet(contMemoriaProg, 30);
+                        preencheMat(A);
+                        valor(B);
+                        acertos = acertosProg = erros = errosProg = numJogadas = numJogadasProg = 0;
+                    }
+                } else if(tela_atual == 2){
+                    if(evento.mouse.x >= LARGURA_TELA/2 - LARGURA_ITEM_MENU/2
+                       && evento.mouse.x <= LARGURA_TELA/2 + LARGURA_ITEM_MENU/2
+                       && evento.mouse.y >= 110
+                       && evento.mouse.y <= 110 + ALTURA_ITEM_MENU){
+                        tela_atual = 0;
+                    }
+                }
+            }
+        }
+
+        if(vez == 1 && acertos+acertosProg < 15){
+            if(chave1 == -1){
+                jogadaPrograma(A, B, &chave1, 0, acertos+acertosProg, memoriaProg, contMemoriaProg, dificuldade);
+            }else{
+                jogadaPrograma(A, B, &chave2, chave1, acertos+acertosProg, memoriaProg, contMemoriaProg, dificuldade);
+            }
+        }
+        // Limpamos a tela
+        al_clear_to_color(al_map_rgb(255, 255, 255));
+
+        // Desenhamos os elementos na tela
+        al_set_target_bitmap(al_get_backbuffer(janela));
+
+        if(tela_atual == 0){
+            al_draw_bitmap(menu, 0, 0, 0);
+            int y = ALTURA_TELA/2+20;
+            for(i = 0; i < TOTAL_DE_ITENS; i++){
+                al_draw_bitmap(itens_menu[i], LARGURA_TELA/2-50, y, 0);
+                y += ALTURA_ITEM_MENU+ESPACO_ENTRE_ITENS;
+            }
+        }else if(tela_atual == 1){
+            al_draw_bitmap(background, 0, 0, 0);
+            desenha_cartas(tras_carta, cartas, A, B);
+            if(vez == 0){
+                al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 120, ALLEGRO_ALIGN_LEFT, "Sua vez");
+            }else if(vez == 1){
+
+                al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 120, ALLEGRO_ALIGN_LEFT, "Vez do computador");
+            }
+            sprintf(pontos, "%d", acertos-erros);
+            sprintf(jogadas, "%d", numJogadas);
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 140, ALLEGRO_ALIGN_LEFT, "Seus pontos: ");
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), 115, 140, ALLEGRO_ALIGN_LEFT, pontos);
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 160, ALLEGRO_ALIGN_LEFT, "Jogadas (voce): ");
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), 130, 160, ALLEGRO_ALIGN_LEFT, jogadas);
+
+            sprintf(pontos, "%d", acertosProg-errosProg);
+            sprintf(jogadas, "%d", numJogadasProg);
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 180, ALLEGRO_ALIGN_LEFT, "Pontos do computador: ");
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), 190, 180, ALLEGRO_ALIGN_LEFT, pontos);
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 200, ALLEGRO_ALIGN_LEFT, "Jogadas (comp): ");
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), 135, 200, ALLEGRO_ALIGN_LEFT, jogadas);
+            if(acertos+acertosProg == 15){
+                if(acertos-erros < acertosProg-errosProg){
+                    al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 240, ALLEGRO_ALIGN_LEFT, "Que pena voce perdeu :(");
+                } else if(acertos-erros == acertosProg-errosProg){
+                    al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 240, ALLEGRO_ALIGN_LEFT, "Ops.. acho que empatou.");
+                } else if(acertos-erros > acertosProg-errosProg){
+                    al_draw_text(fonte, al_map_rgb(0, 0, 0), 20, 240, ALLEGRO_ALIGN_LEFT, "Parabens, voce ganhou!!");
+                }
+            }
+            al_draw_bitmap(voltar, 55, 260, 0);
+        }else if(tela_atual == 2){
+            // Texto centralizado
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), LARGURA_TELA/2, 30, ALLEGRO_ALIGN_CENTRE, "Creditos");
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), LARGURA_TELA/2, 50, ALLEGRO_ALIGN_CENTRE, "Joao N de Deus");
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), LARGURA_TELA/2, 70, ALLEGRO_ALIGN_CENTRE, "Yuri Rosales");
+            al_draw_text(fonte, al_map_rgb(0, 0, 0), LARGURA_TELA/2, 90, ALLEGRO_ALIGN_CENTRE, "Guilherme dos Santos");
+            al_draw_bitmap(voltar, LARGURA_TELA/2-LARGURA_ITEM_MENU/2, 110, 0);
+
+        }
+
+        // Atualiza a tela
+        al_flip_display();
+
+        if(tela_atual == 1){
+            if(chave1 > -1 && chave2 > -1){
+                numeroBUSCA(A, B, &acertos, &erros, &numJogadas, &acertosProg, &errosProg, &numJogadasProg, &chave1, &chave2, &vez, memoriaProg, contMemoriaProg);
+            }else if((chave1 > -1 || chave2 > -1) && vez == 1){
+                Sleep(1000);
+            }
+        }
+    }
+
+    // Desaloca os recursos utilizados na aplicação
+    al_destroy_display(janela);
+    al_destroy_event_queue(fila_eventos);
+
+    return 0;
 }

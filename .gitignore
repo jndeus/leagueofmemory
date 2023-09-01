@@ -3,3 +3,6 @@ obj/*
 *.cbp
 *.depend
 *.layout
+cmake-build-debug
+.vscode
+.idea
